@@ -139,4 +139,68 @@ class Comment(DbBase):
         else:
             return True
 
+    def followed_name(self):
+        if self.is_reply():
+            return self.followed.first().followed.author_name
 
+
+class Article(DbBase):
+    __tablename__ = 'articles'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(64), unique=True)
+    content = Column(Text)
+    summary = Column(Text)
+    create_time = Column(DateTime, index=True, default=datetime.utcnow)
+    update_time = Column(DateTime, index=True, default=datetime.utcnow)
+
+    @staticmethod
+    def add_view(session, article):
+        article.num_of_view = 1
+
+        session.add(article)
+        session.commit()
+
+    def __repr__(self):
+        return '<Article %r>' % self.title
+
+class BlogInfo(DbBase):
+    __tablename__ = 'blog_info'
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(64))
+    signature = Column(Text)
+    navbar = Column(String(64))
+
+class Plugin(DbBase):
+    __tablename__ = 'plugins'
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(64), unique=True)
+    note = Column(Text, default='')
+    content = Column(Text, default='')
+    order = Column(Integer, default=0)
+    disabled = Column(Boolean, default=False)
+
+    def sort_delete(self, session):
+        for plugin in self.query.order_by(self.order.asc()).offset(self.order).all():
+            plugin.order -= 1
+            session.add(plugin)
+        session.commit()
+
+
+    def __repr__(self):
+        return '<Plugin %r>' % self.title
+
+
+class BlogView(DbBase):
+    __tablename__ = 'blog_view'
+    id = Column(Integer, primary_key=True)
+    num_of_view = Column(BigInteger, default=0)
+
+    @staticmethod
+    def add_view(session):
+        view = BlogView.query.first()
+
+        view.num_of_view = 1
+        session.add(view)
+        session.commit()
